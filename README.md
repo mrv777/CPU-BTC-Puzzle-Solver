@@ -12,13 +12,12 @@ This project contains Python scripts that attempt to solve Bitcoin Puzzles by se
 1. Clone this repository or download the files:
    - `main.py`
    - `bitcoin_utils.py`
-   - `cuda_solver.py`
    - `README.md`
 
 2. Install the required Python packages:
 
    ```
-   pip install ecdsa base58 tqdm
+   pip3 install -r requirements.txt
    ```
 
 ## Usage
@@ -53,7 +52,7 @@ pip3 install -r requirements.txt
 
 ## Benchmark
 
-On an M1 Max Macbook Pro, does about 170K keys per second.
+On an M1 Max Macbook Pro, does ~350K keys per second.
 
 ## Important Notes
 
