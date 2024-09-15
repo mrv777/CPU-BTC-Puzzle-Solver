@@ -1,5 +1,5 @@
 import multiprocessing as mp
-from bitcoin_utils import generate_bitcoin_address
+from bitcoin_utils import generate_bitcoin_address  # This will now import the Cython version
 import time
 import argparse
 

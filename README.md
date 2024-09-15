@@ -1,23 +1,31 @@
-# Bitcoin Puzzle Solver
+# Bitcoin Puzzle Solver (Cython Version)
 
-This project contains Python scripts that attempt to solve Bitcoin Puzzles by searching for private keys that generate specific Bitcoin addresses. It includes both a CPU-based multiprocessing version for now.
+This project contains Python/Cython scripts that attempt to solve Bitcoin Puzzles by searching for private keys that generate specific Bitcoin addresses. It includes a CPU-based multiprocessing version optimized with Cython.
 
 ## Prerequisites
 
 - Python 3.7 or higher
 - pip (Python package installer)
+- A C compiler (e.g., GCC, Clang, or MSVC)
 
 ## Installation
 
 1. Clone this repository or download the files:
    - `main.py`
-   - `bitcoin_utils.py`
+   - `bitcoin_utils.pyx`
+   - `setup.py`
    - `README.md`
 
 2. Install the required Python packages:
 
    ```
    pip3 install -r requirements.txt
+   ```
+
+3. Build the Cython extension:
+
+   ```
+   python setup.py build_ext --inplace
    ```
 
 ## Usage
@@ -42,7 +50,6 @@ This project contains Python scripts that attempt to solve Bitcoin Puzzles by se
    - Total execution time and keys checked per second upon completion
 
 
-## Python Environment
 
 ```
 python3 -m venv btcpuzzle1
@@ -61,12 +68,37 @@ On an M1 Max Macbook Pro, does ~350K keys per second.
 - The script is designed to utilize all available CPU cores, which may cause high CPU usage and increased power consumption.
 - There is no guarantee that a solution will be found within the given range.
 
+## Disclaimer
+
+This script is for educational and research purposes only. Please use responsibly and ethically.
+
+## Python Environment
+```
+python3 -m venv btcpuzzle1
+source btcpuzzle1/bin/activate
+pip3 install -r requirements.txt
+```
+
+## Benchmark
+
+On an M1 Max Macbook Pro, this Cython version achieves approximately 600K keys per second, which is a significant improvement over the pure Python version.
+
+## Important Notes
+
+- This script performs a computationally intensive task and may run for a very long time without finding a solution.
+- Ensure your computer is well-ventilated and connected to a power source if you plan to run it for extended periods.
+- The script is designed to utilize all available CPU cores, which may cause high CPU usage and increased power consumption.
+- There is no guarantee that a solution will be found within the given range.
+
 ## Files
 
 - `main.py`: The main script that manages the multiprocessing and overall execution.
-- `bitcoin_utils.py`: Contains utility functions for Bitcoin address generation.
+- `bitcoin_utils.pyx`: Cython file containing optimized utility functions for Bitcoin address generation.
+- `setup.py`: Build script for compiling the Cython extension.
+- `requirements.txt`: List of Python package dependencies.
 - `README.md`: This file, containing instructions and information about the project.
 
 ## Disclaimer
 
 This script is for educational and research purposes only. Please use responsibly and ethically.
+
