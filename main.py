@@ -2,16 +2,27 @@ import multiprocessing as mp
 from bitcoin_utils import generate_bitcoin_address  # This will now import the Cython version
 import time
 import argparse
+from tqdm import tqdm  # Import tqdm for progress bar
+import queue  # Import queue to handle empty exceptions
 
-def check_range(start, end, target_address, chunk_id, result_queue):
+def check_range(start, end, target_address, chunk_id, result_queue, progress_counter, lock):
+    batch_size = 10000  # Update progress every 10,000 keys
     for i in range(start, end):
-        if i % 1000000 == 0:
-            print(f"Chunk {chunk_id}: Checked {i - start:,} keys")
+        if i % batch_size == 0 and i != start:
+            with lock:
+                progress_counter.value += batch_size
+            if (i - start) % 1000000 == 0:
+                print(f"Chunk {chunk_id}: Checked {i - start:,} keys")
         private_key = format(i, '064x')
         address = generate_bitcoin_address(private_key)
         if address == target_address:
             result_queue.put(private_key)
             return
+    # Handle any remaining keys if (end - start) is not divisible by batch_size
+    remaining = (end - start) % batch_size
+    if remaining:
+        with lock:
+            progress_counter.value += remaining
     result_queue.put(None)
 
 def main():
@@ -54,49 +65,79 @@ def main():
         start = args.start or 0x400000000000000000
         end = args.end or 0x7fffffffffffffffff
 
-    num_cores = mp.cpu_count()-2
+    num_cores = mp.cpu_count() - 2  # Reserve 2 cores for other tasks
     print(f"Using {num_cores} CPU cores")
-    
+
     chunk_size = (end - start) // num_cores
     ranges = [(start + i * chunk_size, start + (i + 1) * chunk_size, i) for i in range(num_cores)]
-    
+
     result_queue = mp.Queue()
+
+    manager = mp.Manager()
+    progress_counter = manager.Value('Q', 0)  # Changed from 'i' to 'Q' for larger ranges
+    lock = manager.Lock()  # Lock to synchronize access to the counter
+
     processes = []
-    
+
     start_time = time.time()
-    
+
     for r in ranges:
-        p = mp.Process(target=check_range, args=(r[0], r[1], target_address, r[2], result_queue))
+        p = mp.Process(target=check_range, args=(r[0], r[1], target_address, r[2], result_queue, progress_counter, lock))
         processes.append(p)
         p.start()
-    
-    solution = None
-    completed_processes = 0
-    
-    while completed_processes < num_cores:
-        result = result_queue.get()
-        if result is not None:
-            solution = result
-            break
-        completed_processes += 1
-    
-    for p in processes:
-        p.terminate()
-    
+
+    total_keys = end - start
+    with tqdm(total=total_keys, desc="Progress", unit="keys") as pbar:
+        solution = None
+        completed_processes = 0
+        last_progress = 0
+        while completed_processes < num_cores and solution is None:
+            try:
+                result = result_queue.get(timeout=1)  # Wait for 1 second
+                if result is not None:
+                    solution = result
+                    break
+                completed_processes += 1
+            except queue.Empty:
+                # No result received in the last second, continue to update progress
+                pass
+            # Update progress bar
+            with lock:
+                current_progress = progress_counter.value
+            delta = current_progress - last_progress
+            if delta > 0:
+                pbar.update(delta)
+                last_progress = current_progress
+
+    # **Final Progress Update Before Termination**
+    with lock:
+        current_progress = progress_counter.value
+    delta = current_progress - last_progress
+    if delta > 0:
+        pbar.update(delta)
+        last_progress = current_progress
+
+    # Terminate all processes if a solution was found
+    if solution:
+        for p in processes:
+            p.terminate()
+
     for p in processes:
         p.join()
-    
+
     end_time = time.time()
     elapsed_time = end_time - start_time
-    
+
+    # **Use progress_counter.value for Final Calculation**
+    keys_checked = progress_counter.value
+
     if solution:
-        print(f"Solution found! Private key: {solution}")
+        print(f"\nSolution found! Private key: {solution}")
     else:
-        print("No solution found in the given range.")
-    
+        print("\nNo solution found in the given range.")
+
     print(f"Total execution time: {elapsed_time:.2f} seconds")
-    # Note: This is an approximation, as we don't know exactly how many keys were checked
-    print(f"Approximate keys checked per second: {((end - start) / elapsed_time):,.2f}")
+    print(f"Approximate keys checked per second: {(keys_checked / elapsed_time):,.2f}")
 
 def test():
     private_key = format(0x68f3, '064x')
