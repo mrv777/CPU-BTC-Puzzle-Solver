@@ -81,7 +81,11 @@ pip3 install -r requirements.txt
 
 ## Benchmark
 
-On an M1 Max Macbook Pro, this Cython version achieves approximately 600K keys per second, which is a significant improvement over the pure Python version.
+On an M1 Max Macbook Pro, this Cython version achieves approximately 350k keys per second.
+Total execution time:
+Puzzle 22: 3.4 seconds
+Puzzle 24: 22.5 seconds
+Puzzle 25: 49 seconds
 
 ## Important Notes
 

@@ -16,7 +16,7 @@ def check_range(start, end, target_address, chunk_id, result_queue):
 
 def main():
     parser = argparse.ArgumentParser(description="Bitcoin private key brute-force search")
-    parser.add_argument("--puzzle", type=int, choices=[15, 20, 22, 24, 30, 67, 71], required=True, help="Puzzle number to solve")
+    parser.add_argument("--puzzle", type=int, choices=[15, 20, 22, 24, 25, 30, 67, 71], required=True, help="Puzzle number to solve")
     parser.add_argument("--start", type=lambda x: int(x, 0), help="Start of range (in hex)")
     parser.add_argument("--end", type=lambda x: int(x, 0), help="End of range (in hex)")
     args = parser.parse_args()
@@ -25,18 +25,22 @@ def main():
         target_address = "1QCbW9HWnwQWiQqVo5exhAnmfqKRrCRsvW"
         start = args.start or 0x4000
         end = args.end or 0x7fff
-    elif args.puzzle == 22:
-        target_address = "1CfZWK1QTQE3eS9qn61dQjV89KDjZzfNcv"
-        start = args.start or 0x200000
-        end = args.end or 0x3fffff
     elif args.puzzle == 20:
         target_address = "1HsMJxNiV7TLxmoF6uJNkydxPFDog4NQum"
         start = args.start or 0x80000
         end = args.end or 0xfffff
+    elif args.puzzle == 22:
+        target_address = "1CfZWK1QTQE3eS9qn61dQjV89KDjZzfNcv"
+        start = args.start or 0x200000
+        end = args.end or 0x3fffff
     elif args.puzzle == 24:
         target_address = "1rSnXMr63jdCuegJFuidJqWxUPV7AtUf7"
         start = args.start or 0x800000
         end = args.end or 0xffffff
+    elif args.puzzle == 25:
+        target_address = "15JhYXn6Mx3oF4Y7PcTAv2wVVAuCFFQNiP"
+        start = args.start or 0x1000000
+        end = args.end or 0x1ffffff
     elif args.puzzle == 30:
         target_address = "1LHtnpd8nU5VHEMkG2TMYYNUjjLc992bps"
         start = args.start or 0x20000000
@@ -102,4 +106,3 @@ def test():
 
 if __name__ == "__main__":
     main()
-    
