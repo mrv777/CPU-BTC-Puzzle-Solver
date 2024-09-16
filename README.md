@@ -102,6 +102,15 @@ Puzzle 25: 49 seconds
 - `requirements.txt`: List of Python package dependencies.
 - `README.md`: This file, containing instructions and information about the project.
 
+## Clean up
+
+```
+pip install --force-reinstall --upgrade coincurve
+python setup.py clean
+rm -rf build
+python setup.py build_ext --inplace
+```
+
 ## Disclaimer
 
 This script is for educational and research purposes only. Please use responsibly and ethically.

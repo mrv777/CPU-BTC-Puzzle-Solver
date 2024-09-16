@@ -4,22 +4,28 @@ import time
 import argparse
 from tqdm import tqdm  # Import tqdm for progress bar
 import queue  # Import queue to handle empty exceptions
+import random
 
 def check_range(start, end, target_address, chunk_id, result_queue, progress_counter, lock):
-    batch_size = 10000  # Update progress every 10,000 keys
-    for i in range(start, end):
-        if i % batch_size == 0 and i != start:
+    batch_size = 10000
+    keys_to_check = list(range(start, end))
+    random.shuffle(keys_to_check)  # Randomize the order of keys to check
+
+    for i, key in enumerate(keys_to_check):
+        if i % batch_size == 0 and i != 0:
             with lock:
                 progress_counter.value += batch_size
-            if (i - start) % 1000000 == 0:
-                print(f"Chunk {chunk_id}: Checked {i - start:,} keys")
-        private_key = format(i, '064x')
+            if i % 1000000 == 0:
+                print(f"Chunk {chunk_id}: Checked {i:,} keys")
+        
+        private_key = format(key, '064x')
         address = generate_bitcoin_address(private_key)
         if address == target_address:
             result_queue.put(private_key)
             return
-    # Handle any remaining keys if (end - start) is not divisible by batch_size
-    remaining = (end - start) % batch_size
+
+    # Handle remaining keys
+    remaining = len(keys_to_check) % batch_size
     if remaining:
         with lock:
             progress_counter.value += remaining
@@ -70,6 +76,10 @@ def main():
 
     chunk_size = (end - start) // num_cores
     ranges = [(start + i * chunk_size, start + (i + 1) * chunk_size, i) for i in range(num_cores)]
+
+    # Add a small overlap between chunks
+    overlap = min(1000, chunk_size // 100)  # 1% overlap or 1000 keys, whichever is smaller
+    ranges = [(max(start, r[0] - overlap), min(end, r[1] + overlap), r[2]) for r in ranges]
 
     result_queue = mp.Queue()
 
