@@ -4,3 +4,4 @@ cython
 setuptools
 tqdm
 pyopenssl
+numpy

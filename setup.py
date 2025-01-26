@@ -1,6 +1,7 @@
 from setuptools import setup, Extension
 from Cython.Build import cythonize
 import os
+import numpy as np
 
 # M1 Mac-specific optimizations
 extra_compile_args = [
@@ -22,7 +23,7 @@ extensions = [
         ["bitcoin_utils.pyx"],
         extra_compile_args=extra_compile_args,
         extra_link_args=['-framework', 'Security'] if os.uname().machine == 'arm64' else [],
-        include_dirs=['/opt/homebrew/opt/openssl@3/include'],
+        include_dirs=[np.get_include(), '/opt/homebrew/opt/openssl@3/include'],
         library_dirs=['/opt/homebrew/opt/openssl@3/lib'],
         libraries=['crypto']
     )
@@ -32,12 +33,11 @@ setup(
     ext_modules=cythonize(
         extensions,
         compiler_directives={
-            'language_level': 3,
+            'language_level': "3",
             'boundscheck': False,
             'wraparound': False,
             'initializedcheck': False,
             'cdivision': True,
-            'binding': True,
         }
     )
 )
