@@ -3,3 +3,4 @@ coincurve
 cython
 setuptools
 tqdm
+pyopenssl

@@ -8,124 +8,156 @@ import random
 
 def check_range(start, end, target_address, chunk_id, result_queue, progress_counter, lock):
     batch_size = 10000
-    keys_to_check = list(range(start, end))
-    random.shuffle(keys_to_check)  # Randomize the order of keys to check
-
-    for i, key in enumerate(keys_to_check):
-        if i % batch_size == 0 and i != 0:
-            with lock:
-                progress_counter.value += batch_size
-            if i % 1000000 == 0:
-                print(f"Chunk {chunk_id}: Checked {i:,} keys")
+    current = start
+    
+    while current < end:
+        # Process a batch_size chunk at a time
+        batch_end = min(current + batch_size, end)
         
-        private_key = format(key, '064x')
-        address = generate_bitcoin_address(private_key)
-        if address == target_address:
-            result_queue.put(private_key)
-            return
-
-    # Handle remaining keys
-    remaining = len(keys_to_check) % batch_size
-    if remaining:
+        # Generate and check keys in the current batch
+        for key in range(current, batch_end):
+            private_key = format(key, '064x')
+            address = generate_bitcoin_address(private_key)
+            if address == target_address:
+                result_queue.put(private_key)
+                return
+        
+        # Update progress
         with lock:
-            progress_counter.value += remaining
+            progress_counter.value += (batch_end - current)
+        
+        if current % 1000000 == 0:
+            print(f"Chunk {chunk_id}: Checked up to {current:,}")
+        
+        current = batch_end
+    
     result_queue.put(None)
 
 def main():
-    parser = argparse.ArgumentParser(description="Bitcoin private key brute-force search")
-    parser.add_argument("--puzzle", type=int, choices=[15, 20, 22, 24, 25, 30, 67, 71], required=True, help="Puzzle number to solve")
-    parser.add_argument("--start", type=lambda x: int(x, 0), help="Start of range (in hex)")
-    parser.add_argument("--end", type=lambda x: int(x, 0), help="End of range (in hex)")
-    args = parser.parse_args()
+    try:
+        parser = argparse.ArgumentParser(description="Bitcoin private key brute-force search")
+        parser.add_argument("--puzzle", type=int, choices=[15, 20, 22, 24, 25, 30, 67, 71], required=True, help="Puzzle number to solve")
+        parser.add_argument("--start", type=lambda x: int(x, 0), help="Start of range (in hex)")
+        parser.add_argument("--end", type=lambda x: int(x, 0), help="End of range (in hex)")
+        args = parser.parse_args()
 
-    if args.puzzle == 15:
-        target_address = "1QCbW9HWnwQWiQqVo5exhAnmfqKRrCRsvW"
-        start = args.start or 0x4000
-        end = args.end or 0x7fff
-    elif args.puzzle == 20:
-        target_address = "1HsMJxNiV7TLxmoF6uJNkydxPFDog4NQum"
-        start = args.start or 0x80000
-        end = args.end or 0xfffff
-    elif args.puzzle == 22:
-        target_address = "1CfZWK1QTQE3eS9qn61dQjV89KDjZzfNcv"
-        start = args.start or 0x200000
-        end = args.end or 0x3fffff
-    elif args.puzzle == 24:
-        target_address = "1rSnXMr63jdCuegJFuidJqWxUPV7AtUf7"
-        start = args.start or 0x800000
-        end = args.end or 0xffffff
-    elif args.puzzle == 25:
-        target_address = "15JhYXn6Mx3oF4Y7PcTAv2wVVAuCFFQNiP"
-        start = args.start or 0x1000000
-        end = args.end or 0x1ffffff
-    elif args.puzzle == 30:
-        target_address = "1LHtnpd8nU5VHEMkG2TMYYNUjjLc992bps"
-        start = args.start or 0x20000000
-        end = args.end or 0x3fffffff
-    elif args.puzzle == 67:
-        target_address = "1BY8GQbnueYofwSuFAT3USAhGjPrkxDdW9"
-        start = args.start or 0x40000000000000000
-        end = args.end or 0x7ffffffffffffffff
-    elif args.puzzle == 71:
-        target_address = "1PWo3JeB9jrGwfHDNpdGK54CRas7fsVzXU"
-        start = args.start or 0x400000000000000000
-        end = args.end or 0x7fffffffffffffffff
+        if args.puzzle == 15:
+            target_address = "1QCbW9HWnwQWiQqVo5exhAnmfqKRrCRsvW"
+            start = args.start or 0x4000
+            end = args.end or 0x7fff
+        elif args.puzzle == 20:
+            target_address = "1HsMJxNiV7TLxmoF6uJNkydxPFDog4NQum"
+            start = args.start or 0x80000
+            end = args.end or 0xfffff
+        elif args.puzzle == 22:
+            target_address = "1CfZWK1QTQE3eS9qn61dQjV89KDjZzfNcv"
+            start = args.start or 0x200000
+            end = args.end or 0x3fffff
+        elif args.puzzle == 24:
+            target_address = "1rSnXMr63jdCuegJFuidJqWxUPV7AtUf7"
+            start = args.start or 0x800000
+            end = args.end or 0xffffff
+        elif args.puzzle == 25:
+            target_address = "15JhYXn6Mx3oF4Y7PcTAv2wVVAuCFFQNiP"
+            start = args.start or 0x1000000
+            end = args.end or 0x1ffffff
+        elif args.puzzle == 30:
+            target_address = "1LHtnpd8nU5VHEMkG2TMYYNUjjLc992bps"
+            start = args.start or 0x20000000
+            end = args.end or 0x3fffffff
+        elif args.puzzle == 67:
+            target_address = "1BY8GQbnueYofwSuFAT3USAhGjPrkxDdW9"
+            start = args.start or 0x40000000000000000
+            end = args.end or 0x7ffffffffffffffff
+        elif args.puzzle == 71:
+            target_address = "1PWo3JeB9jrGwfHDNpdGK54CRas7fsVzXU"
+            start = args.start or 0x400000000000000000
+            end = args.end or 0x7fffffffffffffffff
 
-    num_cores = mp.cpu_count() - 2  # Reserve 2 cores for other tasks
-    print(f"Using {num_cores} CPU cores")
+        num_cores = mp.cpu_count()
+        print(f"Using {num_cores} CPU cores")
 
-    chunk_size = (end - start) // num_cores
-    ranges = [(start + i * chunk_size, start + (i + 1) * chunk_size, i) for i in range(num_cores)]
+        # Pick a random starting point within the range
+        range_size = end - start
+        random_start = start + random.randrange(range_size)
+        
+        # Adjust chunk calculations to start from random point
+        chunk_size = range_size // num_cores
+        ranges = []
+        for i in range(num_cores):
+            chunk_start = (random_start + i * chunk_size) % range_size + start
+            chunk_end = (random_start + (i + 1) * chunk_size) % range_size + start
+            ranges.append((chunk_start, chunk_end, i))
 
-    # Add a small overlap between chunks
-    overlap = min(1000, chunk_size // 100)  # 1% overlap or 1000 keys, whichever is smaller
-    ranges = [(max(start, r[0] - overlap), min(end, r[1] + overlap), r[2]) for r in ranges]
+        # Add a small overlap between chunks
+        overlap = min(1000, chunk_size // 100)  # 1% overlap or 1000 keys, whichever is smaller
+        ranges = [(max(start, r[0] - overlap), min(end, r[1] + overlap), r[2]) for r in ranges]
 
-    result_queue = mp.Queue()
+        result_queue = mp.Queue()
 
-    manager = mp.Manager()
-    progress_counter = manager.Value('Q', 0)  # Changed from 'i' to 'Q' for larger ranges
-    lock = manager.Lock()  # Lock to synchronize access to the counter
+        manager = mp.Manager()
+        progress_counter = manager.Value('Q', 0)  # Changed from 'i' to 'Q' for larger ranges
+        lock = manager.Lock()  # Lock to synchronize access to the counter
 
-    processes = []
+        processes = []
+        start_time = time.time()
 
-    start_time = time.time()
+        for r in ranges:
+            p = mp.Process(target=check_range, args=(r[0], r[1], target_address, r[2], result_queue, progress_counter, lock))
+            processes.append(p)
+            p.start()
 
-    for r in ranges:
-        p = mp.Process(target=check_range, args=(r[0], r[1], target_address, r[2], result_queue, progress_counter, lock))
-        processes.append(p)
-        p.start()
+        total_keys = end - start
+        with tqdm(total=total_keys, desc="Progress", unit="keys") as pbar:
+            solution = None
+            completed_processes = 0
+            last_progress = 0
+            while completed_processes < num_cores and solution is None:
+                try:
+                    result = result_queue.get(timeout=1)  # Wait for 1 second
+                    if result is not None:
+                        solution = result
+                        break
+                    completed_processes += 1
+                except queue.Empty:
+                    # No result received in the last second, continue to update progress
+                    pass
+                # Update progress bar
+                with lock:
+                    current_progress = progress_counter.value
+                delta = current_progress - last_progress
+                if delta > 0:
+                    pbar.update(delta)
+                    last_progress = current_progress
 
-    total_keys = end - start
-    with tqdm(total=total_keys, desc="Progress", unit="keys") as pbar:
-        solution = None
-        completed_processes = 0
-        last_progress = 0
-        while completed_processes < num_cores and solution is None:
-            try:
-                result = result_queue.get(timeout=1)  # Wait for 1 second
-                if result is not None:
-                    solution = result
-                    break
-                completed_processes += 1
-            except queue.Empty:
-                # No result received in the last second, continue to update progress
-                pass
-            # Update progress bar
-            with lock:
-                current_progress = progress_counter.value
-            delta = current_progress - last_progress
-            if delta > 0:
-                pbar.update(delta)
-                last_progress = current_progress
+        # Clean up and show final results
+        cleanup_and_show_results(processes, solution, progress_counter, lock, last_progress, pbar, start_time)
 
-    # **Final Progress Update Before Termination**
+    except KeyboardInterrupt:
+        print("\nCTRL+C detected. Cleaning up...")
+        # Terminate all processes
+        for p in processes:
+            p.terminate()
+        for p in processes:
+            p.join()
+        print("\nSearch terminated by user.")
+        # Show final statistics
+        end_time = time.time()
+        elapsed_time = end_time - start_time
+        with lock:
+            keys_checked = progress_counter.value
+        print(f"Total execution time: {elapsed_time:.2f} seconds")
+        print(f"Approximate keys checked: {keys_checked:,}")
+        print(f"Approximate keys checked per second: {(keys_checked / elapsed_time):,.2f}")
+        return
+
+def cleanup_and_show_results(processes, solution, progress_counter, lock, last_progress, pbar, start_time):
+    # Final Progress Update Before Termination
     with lock:
         current_progress = progress_counter.value
     delta = current_progress - last_progress
     if delta > 0:
         pbar.update(delta)
-        last_progress = current_progress
 
     # Terminate all processes if a solution was found
     if solution:
@@ -138,7 +170,7 @@ def main():
     end_time = time.time()
     elapsed_time = end_time - start_time
 
-    # **Use progress_counter.value for Final Calculation**
+    # Use progress_counter.value for Final Calculation
     keys_checked = progress_counter.value
 
     if solution:
